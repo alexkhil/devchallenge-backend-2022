@@ -1,18 +1,13 @@
-using FastEndpoints.Swagger;
 using FastEndpoints;
+using FastEndpoints.Swagger;
+using Solution.Api.Infrastructure.DataAccess;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddFastEndpoints();
-builder.Services.AddSwaggerDoc();
-
-//builder.Services.AddSingleton(GraphDatabase.Driver(
-//    Environment.GetEnvironmentVariable("NEO4J_URI") ?? "neo4j+s://demo.neo4jlabs.com",
-//    AuthTokens.Basic(
-//        Environment.GetEnvironmentVariable("NEO4J_USER") ?? "movies",
-//        Environment.GetEnvironmentVariable("NEO4J_PASSWORD") ?? "movies"
-//    )
-//));
+builder.Services
+    .AddDataAccess(builder.Configuration)
+    .AddFastEndpoints()
+    .AddSwaggerDoc();
 
 var app = builder.Build();
 
