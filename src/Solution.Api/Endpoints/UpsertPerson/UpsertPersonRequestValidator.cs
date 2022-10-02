@@ -1,11 +1,11 @@
 using FastEndpoints;
 using FluentValidation;
 
-namespace Solution.Api.Endpoints.CreatePerson;
+namespace Solution.Api.Endpoints.UpsertPerson;
 
-public class CreatePersonRequestValidator : Validator<CreatePersonRequest>
+public class UpsertPersonRequestValidator : Validator<UpsertPersonRequest>
 {
-    public CreatePersonRequestValidator()
+    public UpsertPersonRequestValidator()
     {
         this.RuleFor(x => x.Id).NotEmpty();
         this.RuleFor(x => x.Topics).NotNull();

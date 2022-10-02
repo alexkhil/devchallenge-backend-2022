@@ -18,12 +18,16 @@ public class PeopleRepository : IPeopleRepository
     {
         await using var session = this.driver.AsyncSession();
 
+        await session.ExecuteWriteAsync(tx => tx.RunAsync(
+            "MATCH (x:Person {id: $personId})-[rel:Trust]->(y:Person) DELETE rel",
+            new { personId }));
+
         foreach (var (trustedPersonId, trustLevel) in trustedConnections)
         {
             await session.ExecuteWriteAsync(tx => tx.RunAsync(
-                "MATCH (x:Person {id: $personId})" +
-                "MATCH (y:Person {id: $trustedPersonId})" +
-                "CREATE (x)-[rel:Trust { level: $trustLevel }]->(y)",
+                @"MATCH (x:Person {id: $personId})
+                  MATCH (y:Person {id: $trustedPersonId})
+                  CREATE (x)-[rel:Trust { level: $trustLevel }]->(y)",
                 new { personId, trustedPersonId, trustLevel }));
         }
     }
@@ -33,7 +37,9 @@ public class PeopleRepository : IPeopleRepository
         await using var session = this.driver.AsyncSession();
 
         await session.ExecuteWriteAsync(tx => tx.RunAsync(
-            "CREATE (a:Person {id: $id, topics: $topics})",
+            @"MERGE (a:Person {id: $id})
+              ON MATCH SET a.topics = $topics
+              ON CREATE SET a.topics = $topics",
             new { id = person.Id, topics = person.Topics }));
     }
 
@@ -47,12 +53,12 @@ public class PeopleRepository : IPeopleRepository
         return await session.ExecuteReadAsync(async tx =>
         {
             var cursor = await tx.RunAsync(
-                "MATCH (p1:Person)-[rel:Trust]->(p2:Person {id: $fromPersonId})" +
-                "WHERE rel.level >= $minTrustLevel and p1.topics = $topics " +
-                "RETURN p1.id",
+                @"MATCH (p1:Person)-[rel:Trust]->(p2:Person {id: $fromPersonId})
+                  WHERE rel.level >= $minTrustLevel AND (all(topic IN $topics WHERE topic IN p1.topics) OR size($topics) = 0)
+                  RETURN p1.id as id",
                 new { fromPersonId, minTrustLevel, topics });
 
-            var people = await cursor.ToListAsync(x => x["p1.id"].As<string>());
+            var people = await cursor.ToListAsync(x => x["id"].As<string>());
 
             return people;
         });
@@ -68,14 +74,14 @@ public class PeopleRepository : IPeopleRepository
         return await session.ExecuteReadAsync(async tx =>
         {
             var cursor = await tx.RunAsync(
-                "MATCH" +
-                    "(p1: Person {id: $fromPersonId})," +
-                    "(p2: Person {topics: $topics})," +
-                    "p = shortestPath((p1) -[:Trust *]->(p2))" +
-                "WHERE " +
-                "ALL(r IN relationships(p) WHERE r.level >= $minTrustLevel)" +
-                "AND id(p1) <> id(p2)" +
-                "RETURN p",
+                @"MATCH
+                    (p1: Person {id: $fromPersonId}),
+                    (p2: Person {topics: $topics}),
+                    p = shortestPath((p1) -[:Trust *]->(p2))
+                  WHERE
+                  ALL(r IN relationships(p) WHERE r.level >= $minTrustLevel)
+                  AND id(p1) <> id(p2)
+                  RETURN p",
                 new { fromPersonId, minTrustLevel, topics });
 
             var paths = await cursor.ToListAsync(x => x["p"].As<IPath>());

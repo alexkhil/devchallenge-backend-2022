@@ -1,10 +1,10 @@
 namespace Solution.Api.Endpoints.BroadcastMessage;
 
-public class BroadcastMessageEndpointResponse : Dictionary<string, List<string>>
+public class BroadcastMessageEndpointResponse : Dictionary<string, IEnumerable<string>>
 {
     public static BroadcastMessageEndpointResponse From(
         string fromPersonId,
-        List<string> people)
+        IEnumerable<string> people)
     {
         var response = new BroadcastMessageEndpointResponse();
 

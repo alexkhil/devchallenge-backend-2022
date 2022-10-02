@@ -1,10 +1,11 @@
+using System.Net;
 using FastEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Solution.Api.Infrastructure.DataAccess;
 
 namespace Solution.Api.Endpoints.BroadcastMessage;
 
-[HttpPost("/api/message"), AllowAnonymous]
+[HttpPost("/api/messages"), AllowAnonymous]
 public class BroadcastMessageEndpoint
     : Endpoint<BroadcastMessageEndpointRequest, BroadcastMessageEndpointResponse>
 {
@@ -26,6 +27,6 @@ public class BroadcastMessageEndpoint
 
         var response = BroadcastMessageEndpointResponse.From(req.FromPersonId, people);
 
-        await this.SendOkAsync(response, ct);
+        await this.SendAsync(response, (int)HttpStatusCode.Created, ct);
     }
 }

@@ -1,6 +1,6 @@
-namespace Solution.Api.Endpoints.CreatePerson;
+namespace Solution.Api.Endpoints.UpsertPerson;
 
-public class CreatePersonRequest
+public class UpsertPersonRequest
 {
     public string Id { get; set; } = string.Empty;
 

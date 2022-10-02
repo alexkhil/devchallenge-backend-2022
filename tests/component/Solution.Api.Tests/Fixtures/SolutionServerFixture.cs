@@ -20,13 +20,13 @@ public class SolutionServerFixture : IAsyncLifetime
             .Build();
     }
 
-    public HttpClient HttpClient { get; private set; }
+    public SolutionApiClient Client { get; private set; }
 
     public async Task InitializeAsync()
     {
         await this.neo4jContainer.StartAsync();
 
-        this.HttpClient = this.solutionApiFactory.CreateClient();
+        this.Client = new SolutionApiClient(this.solutionApiFactory.CreateClient());
     }
 
     public async Task DisposeAsync()
