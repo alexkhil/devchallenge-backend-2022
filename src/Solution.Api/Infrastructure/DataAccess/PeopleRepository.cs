@@ -43,25 +43,60 @@ public class PeopleRepository : IPeopleRepository
             new { id = person.Id, topics = person.Topics }));
     }
 
-    public async Task<List<string>> GetBroadcastReceiversAsync(
+    // TODO: Use Neo4j implementation of BFS
+    public async Task<Dictionary<string, List<string>>> GetBroadcastReceiversAsync(
         string fromPersonId,
         int minTrustLevel,
         IEnumerable<string> topics)
     {
+        var result = new Dictionary<string, List<string>>();
+
         await using var session = this.driver.AsyncSession();
 
-        return await session.ExecuteReadAsync(async tx =>
+        var received = new HashSet<string>();
+        var visited = new HashSet<string>();
+        var queue = new Queue<string>();
+
+        queue.Enqueue(fromPersonId);
+        visited.Add(fromPersonId);
+
+        while (queue.Count > 0)
         {
-            var cursor = await tx.RunAsync(
-                @"MATCH (p1:Person)-[rel:Trust]->(p2:Person {id: $fromPersonId})
-                  WHERE rel.level >= $minTrustLevel AND (all(topic IN $topics WHERE topic IN p1.topics) OR size($topics) = 0)
-                  RETURN p1.id as id",
-                new { fromPersonId, minTrustLevel, topics });
+            var sourcePersonId = queue.Dequeue();
 
-            var people = await cursor.ToListAsync(x => x["id"].As<string>());
+            var people = await session.ExecuteReadAsync(async tx =>
+            {
+                var cursor = await tx.RunAsync(
+                    @"MATCH (p1:Person {id: $sourcePersonId})-[rel:Trust]->(p2:Person)
+                  WHERE rel.level >= $minTrustLevel AND (all(topic IN $topics WHERE topic IN p2.topics) OR size($topics) = 0)
+                  RETURN p2.id as id",
+                    new { sourcePersonId, minTrustLevel, topics });
 
-            return people;
-        });
+                var people = await cursor.ToListAsync(x => x["id"].As<string>());
+
+                return people;
+            });
+
+            var receivers = people.Where(x => !received.Contains(x)).ToList();
+            if (receivers.Any())
+            {
+                result[sourcePersonId] = receivers;
+                receivers.ForEach(x => received.Add(x));
+            }
+
+            foreach (var person in people)
+            {
+                if (visited.Contains(person))
+                {
+                    continue;
+                }
+
+                visited.Add(person);
+                queue.Enqueue(person);
+            }
+        }
+
+        return result;
     }
 
     public async Task<List<string>> TraceMessageAsync(
@@ -76,10 +111,11 @@ public class PeopleRepository : IPeopleRepository
             var cursor = await tx.RunAsync(
                 @"MATCH
                     (p1: Person {id: $fromPersonId}),
-                    (p2: Person {topics: $topics}),
+                    (p2: Person),
                     p = shortestPath((p1) -[:Trust *]->(p2))
                   WHERE
                   ALL(r IN relationships(p) WHERE r.level >= $minTrustLevel)
+                  AND (all(topic IN $topics WHERE topic IN p2.topics) OR size($topics) = 0)
                   AND id(p1) <> id(p2)
                   RETURN p",
                 new { fromPersonId, minTrustLevel, topics });

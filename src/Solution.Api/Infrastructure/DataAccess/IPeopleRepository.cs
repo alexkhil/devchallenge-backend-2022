@@ -10,7 +10,7 @@ public interface IPeopleRepository
         string personId,
         IReadOnlyDictionary<string, int> trustedConnections);
 
-    Task<List<string>> GetBroadcastReceiversAsync(
+    Task<Dictionary<string, List<string>>> GetBroadcastReceiversAsync(
         string fromPersonId,
         int minTrustLevel,
         IEnumerable<string> topics);

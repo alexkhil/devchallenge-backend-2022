@@ -7,7 +7,7 @@ namespace Solution.Api.Endpoints.BroadcastMessage;
 
 [HttpPost("/api/messages"), AllowAnonymous]
 public class BroadcastMessageEndpoint
-    : Endpoint<BroadcastMessageEndpointRequest, BroadcastMessageEndpointResponse>
+    : Endpoint<BroadcastMessageEndpointRequest, Dictionary<string, List<string>>>
 {
     private readonly IPeopleRepository peopleRepository;
 
@@ -25,8 +25,6 @@ public class BroadcastMessageEndpoint
             req.MinTrustLevel,
             req.Topics);
 
-        var response = BroadcastMessageEndpointResponse.From(req.FromPersonId, people);
-
-        await this.SendAsync(response, (int)HttpStatusCode.Created, ct);
+        await this.SendAsync(people, (int)HttpStatusCode.Created, ct);
     }
 }

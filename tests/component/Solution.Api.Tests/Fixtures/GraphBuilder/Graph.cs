@@ -21,7 +21,7 @@ public class Graph : ITrustStep
         return this;
     }
 
-    public IRootStep Trusts(string personId, int trustLevel)
+    public ITrustStep Trusts(string personId, int trustLevel)
     {
         var newConnection = (personId, trustLevel);
         var fromPersonId = this.people.Last().Id;
@@ -38,6 +38,8 @@ public class Graph : ITrustStep
 
     public async Task CreateAsync()
     {
+        await this.client.PurgeDbAsync();
+
         foreach (var person in this.people)
         {
             await this.client.UpsertPersonAsync(person);
