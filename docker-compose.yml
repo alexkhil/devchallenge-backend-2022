@@ -1,0 +1,32 @@
+version: "3.7"
+
+services:
+  db:
+    image: neo4j:latest
+    container_name: solution.db
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    environment:
+      NEO4J_AUTH: "none"
+    healthcheck:
+      test: ["CMD", "wget", "-nv", "-t1", "http://localhost:7474/browser"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  api:
+    image: solution.api
+    container_name: solution.api
+    depends_on:
+      db:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: src/Solution.Api/Dockerfile
+    environment:
+      Neo4j__Uri: "neo4j://db:7687"
+      Neo4j__User: "neo4j"
+      Neo4j__Password: "neo4j"
+    ports:
+      - "8080:80"
+    restart: always

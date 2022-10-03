@@ -1,8 +1,8 @@
-﻿public class Neo4jOptions
+public class Neo4jOptions
 {
     public const string SectionPath = "Neo4j";
 
-    public Uri Uri { get; set; }
+    public string Uri { get; set; } = string.Empty;
 
     public string User { get; set; } = string.Empty;
 

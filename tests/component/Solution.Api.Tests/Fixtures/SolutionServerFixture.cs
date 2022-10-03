@@ -17,7 +17,6 @@ public class SolutionServerFixture : IAsyncLifetime
         this.neo4jContainer = new TestcontainersBuilder<TestcontainersContainer>()
             .WithImage("neo4j:latest")
             .WithEnvironment("NEO4J_AUTH", "neo4j/test")
-            .WithEnvironment("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]")
             .WithPortBinding(7687)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(7687))
             .Build();
